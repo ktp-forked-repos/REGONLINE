@@ -1,0 +1,50 @@
+<*Local string &requestStr, &responseStr;
+Local Message &msg, &reply;
+Local XmlDoc &xml;
+
+&USRname = UV_REGONLN_USR.UV_REGONLN_USER; /*"UVM-ETS-API-UVM";*/
+&password = UV_REGONLN_USR.UV_REGONLN_PASS; /*"Perry_White_1952!";*/
+
+&requestStr = &requestStr | "<?xml version='1.0'?><Login xmlns='http://www.regonline.com/api'>";
+&requestStr = &requestStr | "<USRname>" | &USRname | "</USRname>";
+&requestStr = &requestStr | "<password>" | &password | "</password>";
+&requestStr = &requestStr | "</Login>";
+
+rem UV_WSDL_TEST.IB_SOAPREQ = &requestStr;
+
+&xml = CreateXmlDoc(&requestStr);
+&msg = CreateMessage(Operation.LOGIN16165, %IntBroker_Request);
+&msg.SetXmlDoc(&xml);
+&reply = %IntBroker.SyncRequest(&msg);
+
+UV_REGONLN_USR.UV_REGONLN_TOKEN = " ";
+
+If All(&reply) Then
+   &responseStr = &reply.GenXMLString();
+   rem UV_WSDL_TEST.IB_SOAPRESP = &responseStr;
+   MessageBox(0, "", 0, 0, "Success");
+Else
+   MessageBox(0, "", 0, 0, "Error. No reply");
+End-If;
+
+Local string &sSearchChar, &sInput, &sInt;
+Local number &intLocation;
+
+If All(&responseStr) Then
+   /*Response looks like this */
+   /*<?xml version="1.0" encoding="UTF-16"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+   /*xmlns:xsd="http://www.w3.org/2001/XMLSchema"><soap:Body><LoginResponse xmlns="http://www.regonline.com/api"><LoginResult><Success>true</Success><Data><Success>true</Success><RedirectUrl>../LoginDirector.ashx?EventSessionId=7b47222b564e4e979b69b47437ade633</RedirectUrl><EventSessionId>7b47222b564e4e979b69b47437ade633</EventSessionId><CustomerId>405876</CustomerId><DisplayCaptcha>false</DisplayCaptcha><IsCustomerDeactivated>false</IsCustomerDeactivated><APIToken>4DiPwfuoT/pPzw8FXZ86Fn5hGUO5aB72Mco3bPrfkv3MryiPtaDiSNTFUJa9CGYW</APIToken><Email>wvw@uvm.edu</Email></Data><StatusCode>0</StatusCode><Authority>0</Authority></LoginResult></LoginResponse></soap:Body></soap:Envelope>>*/
+   
+   &sSearchChar = "<APIToken>";
+   &intLocation = Find(&sSearchChar, &responseStr);
+   &sInt = NumberToString("%*", &intLocation);
+   rem MessageBox(0, "", 0, 0, &sInt);
+   rem MessageBox(0, "", 0, 0, &sInt); /*619*/
+   rem this works &APITOKEN = Substring(&responseStr, 619, 85);
+   &APITOKEN = Substring(&responseStr, &intLocation, 85);
+   MessageBox(0, "", 0, 0, &APITOKEN);
+   UV_REGONLN_USR.UV_REGONLN_TOKEN = &APITOKEN;
+End-If;
+
+UV_REGONLN_USR.UV_REGONLN_PASS = "*****************";
+*>
